@@ -3,17 +3,19 @@ import logo from './logo.svg';
 import './App.css';
 
 import Web3 from 'web3';
+import { Accounts } from 'web3-eth-accounts';
 
 
 class App extends React.Component {
   state = {
-    contract: null
+    contract: null,
+    account: null
   }
 
   async componentDidMount() {
     const web3 = new Web3(window.ethereum);
     await window.ethereum.enable();
-
+    web3.eth.getAccounts((e, r) => { console.log(r); this.setState({ account: r}) })
     const contract = new web3.eth.Contract([
       {
         "constant": false,
@@ -92,14 +94,23 @@ class App extends React.Component {
     // })
     this.setState({ contract })
   }
+handleClick = async () => {
+  try {
+  await window.web3.eth.sendTransaction({ to: '0xf1d74C3C7f3f2767675Cd5dd66497073961DBF13', value: 100 })
+  } catch (e) {
+    console.log(e)
+  }
+}
 
   render() {
     return (
       <div className="App">
         <header className="App-header">
           <button onClick={() => this.state.contract.methods.getBalance().call((err, res) => console.log(res))}>Get Balance</button>
-          <button onClick={() => this.state.contract.methods.allowSending().call()}>Allow Sending</button>
-          <button onClick={() => this.state.contract.methods.send().call('0x7Dc84745ff4E6A53805F2f46985Fa002D8d1beeD', 10)}>Send</button>
+          <button onClick={() => this.state.contract.methods.allowSending().send({from: this.state.account[0]})}>Allow Sending</button>
+          <button onClick={() => this.state.contract.methods.send('0x7Dc84745ff4E6A53805F2f46985Fa002D8d1beeD', 10).send({from: this.state.account[0]})}>Send</button>
+          <button onClick={this.handleClick}>tranfer</button>
+
         </header>
       </div>
     );
