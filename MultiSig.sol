@@ -1,33 +1,34 @@
 pragma solidity ^0.5.8;
 
 contract MultiSig {
-    mapping(address => bool) isOwner;
-    mapping (address => bool) canSend;
+    address[] public addresses;
+    mapping (address => bool) public canSend;
     
-    constructor (address[] memory addresses) public payable {
-        address lastAddress;
+    
+    modifier senderIsOwner() {
+        bool isOwner;
         for(uint i = 0; i < addresses.length; i++) {
-            require(lastAddress < addresses[i], "Addresses must be in increasing order to preserve uniqueness.");
-            isOwner[addresses[i]] = true;
-            lastAddress = addresses[i];
+            if(addresses[i] == msg.sender) {
+                isOwner = true;
+            }
         }
+        require(isOwner, "Not owner.");
+        _;
     }
     
-    function allowSending () public {
-        require(isOwner[msg.sender] == true, "Not allowed.");
+    constructor (address[] memory _addresses) public payable {
+        addresses = _addresses;
+    }
+    
+    function allowSending () public senderIsOwner {
+        
         
         canSend[msg.sender] = true;
     }
     
-    function send (address[] memory addresses, address payable destination, uint value) public {
-        require(isOwner[msg.sender] == true);
-        
-        address lastAddress; // strictly increasing addresses to enforce uniqueness
+    function send (address payable destination, uint value) public senderIsOwner{
         for(uint i = 0; i < addresses.length; i++) {
-            require(lastAddress < addresses[i], "Addresses must be in increasing order.");
-            require(isOwner[addresses[i]] == true, "Must be an owner in this contract.");
             require(canSend[addresses[i]] == true, "Permission to send not given.");
-            lastAddress = addresses[i];
         }
         
         destination.transfer(value);
